@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_vpc" "eks_vpc" {
-  cidr_block = "10.0.0.0/16" # Change this to your desired CIDR block
+  cidr_block = "172.20.0.0/16" # Change this to your desired CIDR block
   enable_dns_support = true
   enable_dns_hostnames = true
 }
@@ -18,7 +18,7 @@ resource "aws_subnet" "eks_subnet_a" {
 
 resource "aws_subnet" "eks_subnet_b" {
   vpc_id            = aws_vpc.eks_vpc.id
-  cidr_block        = "1172.20.2.0/24" # Change this to your desired subnet CIDR block for AZ B
+  cidr_block        = "172.20.2.0/24" # Change this to your desired subnet CIDR block for AZ B
   availability_zone = "ap-southeast-1b"  # Change this to your desired AZ
 
   map_public_ip_on_launch = true # Enable auto-assign public IP addresses
