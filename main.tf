@@ -96,10 +96,15 @@ resource "aws_eks_node_group" "my_node_group" {
   node_role_arn   = aws_iam_role.node_role.arn
   subnet_ids      = [aws_subnet.eks_subnet_a.id, aws_subnet.eks_subnet_b.id]
   scaling_config {
-    desired_size = 2
-    max_size     = 3
+    desired_size = 1
+    max_size     = 2
     min_size     = 1
   }
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_node_group_policy_attachment,
+    aws_iam_role_policy_attachment.eks_cni_policy_attachment,
+    aws_iam_role_policy_attachment.eks_AmazonEC2ContainerRegistryReadOnly,
+  ]
 }
 
 resource "aws_iam_role" "node_role" {
@@ -124,6 +129,11 @@ resource "aws_iam_role_policy_attachment" "eks_node_group_policy_attachment" {
 resource "aws_iam_role_policy_attachment" "eks_cni_policy_attachment" {
   role       = aws_iam_role.node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_AmazonEC2ContainerRegistryReadOnly" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = aws_iam_role.node_role.name
 }
 
 
