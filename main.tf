@@ -10,7 +10,7 @@ resource "aws_vpc" "eks_vpc" {
 
 resource "aws_subnet" "eks_subnet_a" {
   vpc_id            = aws_vpc.eks_vpc.id
-  cidr_block        = "10.0.1.0/24" # Change this to your desired subnet CIDR block for AZ A
+  cidr_block        = "172.20.1.0/24" # Change this to your desired subnet CIDR block for AZ A
   availability_zone = "ap-southeast-1a"  # Change this to your desired AZ
 
   map_public_ip_on_launch = true # Enable auto-assign public IP addresses
@@ -18,7 +18,7 @@ resource "aws_subnet" "eks_subnet_a" {
 
 resource "aws_subnet" "eks_subnet_b" {
   vpc_id            = aws_vpc.eks_vpc.id
-  cidr_block        = "10.0.2.0/24" # Change this to your desired subnet CIDR block for AZ B
+  cidr_block        = "1172.20.2.0/24" # Change this to your desired subnet CIDR block for AZ B
   availability_zone = "ap-southeast-1b"  # Change this to your desired AZ
 
   map_public_ip_on_launch = true # Enable auto-assign public IP addresses
@@ -28,7 +28,7 @@ resource "aws_route_table" "eks_route_table_a" {
   vpc_id = aws_vpc.eks_vpc.id
 
   route {
-    cidr_block = "172.20.0.0/16" # Assuming this is the CIDR block for your EKS control plane
+    cidr_block = "0.0.0.0/0" # Assuming this is the CIDR block for your EKS control plane
     gateway_id = aws_internet_gateway.eks_igw.id # Assuming you have an internet gateway attached to your VPC
   }
 }
@@ -37,7 +37,7 @@ resource "aws_route_table" "eks_route_table_b" {
   vpc_id = aws_vpc.eks_vpc.id
 
   route {
-    cidr_block = "172.20.0.0/16" # Assuming this is the CIDR block for your EKS control plane
+    cidr_block = "0.0.0.0/0" # Assuming this is the CIDR block for your EKS control plane
     gateway_id = aws_internet_gateway.eks_igw.id # Assuming you have an internet gateway attached to your VPC
   }
 }
@@ -52,10 +52,34 @@ resource "aws_route_table_association" "eks_association_b" {
   route_table_id = aws_route_table.eks_route_table_b.id
 }
 
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["eks.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "eks-role" {
+  name               = "eks-cluster-role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "AmazonEKSClusterPolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.eks-role.name
+}
+
+
 resource "aws_eks_cluster" "my_cluster" {
-  name     = "my-cluster"
-  role_arn = aws_iam_role.eks_role.arn
-  version  = "1.24" # Change this to your desired EKS version
+  name     = "MTLTest-cluster"
+  role_arn = aws_iam_role.eks-role.arn
+  version  = "1.25" # Change this to your desired EKS version
 
   vpc_config {
     subnet_ids = [
@@ -102,19 +126,6 @@ resource "aws_iam_role_policy_attachment" "eks_cni_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
-resource "aws_iam_role" "eks_role" {
-  name               = "eks-role"
-  assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [{
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "eks.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }]
-  })
-}
 
 resource "aws_security_group" "eks_sg" {
   name   = "eks-sg"
