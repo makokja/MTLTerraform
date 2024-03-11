@@ -1,35 +1,33 @@
 provider "aws" {
-  region = "ap-southeast-1" # Change this to your desired region
+  region = var.region
 }
 
 resource "aws_vpc" "eks_vpc" {
-  cidr_block = "172.20.0.0/16" # Change this to your desired CIDR block
+  cidr_block = var.vpc_cidr_block
   enable_dns_support = true
   enable_dns_hostnames = true
 }
 
 resource "aws_subnet" "eks_subnet_a" {
   vpc_id            = aws_vpc.eks_vpc.id
-  cidr_block        = "172.20.1.0/24" # Change this to your desired subnet CIDR block for AZ A
-  availability_zone = "ap-southeast-1a"  # Change this to your desired AZ
-
-  map_public_ip_on_launch = true # Enable auto-assign public IP addresses
+  cidr_block        = var.subnet_cidr_a
+  availability_zone = var.availability_zone_a
+  map_public_ip_on_launch = true
 }
 
 resource "aws_subnet" "eks_subnet_b" {
   vpc_id            = aws_vpc.eks_vpc.id
-  cidr_block        = "172.20.2.0/24" # Change this to your desired subnet CIDR block for AZ B
-  availability_zone = "ap-southeast-1b"  # Change this to your desired AZ
-
-  map_public_ip_on_launch = true # Enable auto-assign public IP addresses
+  cidr_block        = var.subnet_cidr_b
+  availability_zone = var.availability_zone_b
+  map_public_ip_on_launch = true
 }
 
 resource "aws_route_table" "eks_route_table_a" {
   vpc_id = aws_vpc.eks_vpc.id
 
   route {
-    cidr_block = "0.0.0.0/0" # Assuming this is the CIDR block for your EKS control plane
-    gateway_id = aws_internet_gateway.eks_igw.id # Assuming you have an internet gateway attached to your VPC
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.eks_igw.id
   }
 }
 
@@ -37,8 +35,8 @@ resource "aws_route_table" "eks_route_table_b" {
   vpc_id = aws_vpc.eks_vpc.id
 
   route {
-    cidr_block = "0.0.0.0/0" # Assuming this is the CIDR block for your EKS control plane
-    gateway_id = aws_internet_gateway.eks_igw.id # Assuming you have an internet gateway attached to your VPC
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.eks_igw.id
   }
 }
 
@@ -79,7 +77,7 @@ resource "aws_iam_role_policy_attachment" "AmazonEKSClusterPolicy" {
 resource "aws_eks_cluster" "my_cluster" {
   name     = "MTLTest-cluster"
   role_arn = aws_iam_role.eks-role.arn
-  version  = "1.25" # Change this to your desired EKS version
+  version  = "1.25"
 
   vpc_config {
     subnet_ids = [
@@ -147,8 +145,6 @@ resource "aws_security_group" "eks_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
-  // Add inbound rules as per your requirements
 }
 
 resource "aws_internet_gateway" "eks_igw" {
